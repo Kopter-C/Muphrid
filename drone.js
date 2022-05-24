@@ -1,3 +1,10 @@
+const separation = 0.005,
+    cohesion = 0.025,
+    alignment = 0.15,
+    sepSight = 20,
+    alignSight = 50,
+    cohesionSight = Infinity;
+
 const obstacles = [
     vec(350, 350),
 ];
