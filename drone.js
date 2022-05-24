@@ -1,11 +1,15 @@
+const obstacles = [
+    vec(350, 350),
+];
+
 const ids = ['white', 'red', 'green', 'blue', 'purple'];
 class Drone {
-    constructor(id) {
+    constructor(id = 'white') {
         this.pos = vec(Math.random()*50+200, Math.random()*50+200);
         this.velocity = vec(0, 0);
         this.acceleration = vec.norm(vec(Math.random()*2-1, Math.random()*2-1));
         this.id = id;
-        
+        this.active = true;
     }
     update() {
         this.pos = vec.add(this.pos, this.velocity);
@@ -42,8 +46,7 @@ class Drone {
             close ++;
         }
         
-        if (sepDir.x && sepDir.y) sepDir = vec.mult(sepDir, separation);
-        
+        // Cohesion
         if (center.x && center.y && close) {
             center = vec.div(center, close);
             const dirToCenter = vec.norm(vec.sub(center, this.pos));
@@ -52,10 +55,14 @@ class Drone {
                 vec.add(this.acceleration, vec.mult(dirToCenter, cohesion))
             );
         }
+        
+        // Separation
+        if (sepDir.x && sepDir.y) sepDir = vec.mult(sepDir, separation);
         this.acceleration = vec.norm(
             vec.add(this.acceleration, sepDir)
         );
         
+        // Alignment
         if (close) {
             const currentAcc = vec.copy(this.acceleration);
             this.acceleration = vec.norm(
@@ -63,6 +70,39 @@ class Drone {
             );
         }
         
+        // Targeting
+        const dirToTarget = vec.sub(
+            vec(mouseX, mouseY),
+            this.pos
+        );
+        
+        this.acceleration = vec.norm(vec.add(
+            this.acceleration,
+            vec.mult(vec.norm(dirToTarget), 0.1)
+        ));
+        
+        if (Math.hypot(dirToTarget.x, dirToTarget.y) < 30) {
+            this.active = false;
+        }
+        
+        // Obstacles
+        for (const obs of obstacles) {
+            const dist = Math.hypot(obs.x-this.pos.x, obs.y-this.pos.y);
+            if (dist > 50) continue;
+            
+            const scale = 1-dist/70+0.2;
+            const dirToObs = vec.sub(this.pos, obs)
+            
+            this.acceleration = vec.norm(vec.add(
+                this.acceleration,
+                vec.mult(vec.norm(dirToObs), scale)
+            ));
+            
+            
+        }
+        
+        
+        // Boundaries
         if (this.pos.x < 50) {
             this.acceleration = vec.norm(
                 vec.add(
