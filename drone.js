@@ -1,3 +1,4 @@
+const ids = ['white', 'red', 'green', 'blue', 'purple'];
 class Drone {
     constructor(id) {
         this.pos = vec(Math.random()*50+200, Math.random()*50+200);
