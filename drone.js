@@ -15,13 +15,15 @@ class Drone {
         this.pos = vec(Math.random()*50+200, Math.random()*50+200);
         this.velocity = vec(0, 0);
         this.acceleration = vec.norm(vec(Math.random()*2-1, Math.random()*2-1));
+        
         this.id = id;
         this.active = true;
+        this.maxVelocity = 1;
     }
     update() {
         this.pos = vec.add(this.pos, this.velocity);
         this.velocity = vec.add(this.velocity, this.acceleration);
-        vec.limit(this.velocity, 1);
+        vec.limit(this.velocity, this.maxVelocity);
         
         let sepDir = vec(0, 0);
         let center = this.pos,
@@ -54,12 +56,12 @@ class Drone {
         }
         
         // Cohesion
+        center = vec.div(center, close);
+        const dirToCenter = vec.sub(center, this.pos);
         if (center.x && center.y && close) {
-            center = vec.div(center, close);
-            const dirToCenter = vec.norm(vec.sub(center, this.pos));
             
             this.acceleration = vec.norm(
-                vec.add(this.acceleration, vec.mult(dirToCenter, cohesion))
+                vec.add(this.acceleration, vec.mult(vec.norm(dirToCenter), cohesion))
             );
         }
         
@@ -76,6 +78,9 @@ class Drone {
                 vec.add(this.acceleration, vec.mult(vec.div(angle, close), alignment))
             );
         }
+        
+        
+        
         
         // Targeting
         const dirToTarget = vec.sub(
@@ -95,9 +100,9 @@ class Drone {
         // Obstacles
         for (const obs of obstacles) {
             const dist = Math.hypot(obs.x-this.pos.x, obs.y-this.pos.y);
-            if (dist > 50) continue;
+            if (dist > 80) continue;
             
-            const scale = 1-dist/70+0.2;
+            const scale = 0.5-(dist-30)/100+0;
             const dirToObs = vec.sub(this.pos, obs)
             
             this.acceleration = vec.norm(vec.add(
@@ -107,6 +112,8 @@ class Drone {
             
             
         }
+        
+        
         
         
         // Boundaries
