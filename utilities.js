@@ -116,3 +116,12 @@ function rotatePoint(pos, angle){
 function dist(a, b, c, d){
     return Math.abs(Math.sqrt((Math.max(a, c)-Math.min(a, c))**2+(Math.max(b, d)-Math.min(b, d))**2));
 }
+
+const mouse = {
+	screen: {x: 0, y: 0},
+	space: {x: 0, y: 0},
+	pressed: false
+};
+gameCanvas.addEventListener("mousemove", (e)=>{
+	mouse.screen = {x: e.clientX, y: e.clientY};
+});
