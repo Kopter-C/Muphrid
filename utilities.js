@@ -86,3 +86,24 @@ const timers = (function() {
     
     return func;
 })();
+const tau = Math.PI*2;
+const camera = {
+	pos: {x:0, y:0},
+	rotation: 0,
+	target: moon,
+	run: function(){// Must be run in loop
+		this.pos.x += (-this.target.pos.x-this.pos.x)/10;
+		this.pos.y += (-this.target.pos.y-this.pos.y)/10;
+		//this.rotation += (-this.target.rotation-this.rotation)/10;
+		this.rotation += 0.001;
+		ctx.setTransform(1, 0, 0, 1, width/2, height/2);
+		ctx.rotate(this.rotation);
+		ctx.translate(this.pos.x, this.pos.y);
+	}
+};
+function angleToPoint(x, y, x2, y2){
+	return -Math.atan2(x-x2, y-y2)-1.5708;
+}
+function getPointOnOrbit(i, orbitRadiusX, orbitRadiusY, orbitRotation){
+	return {x: (Math.cos(i)*orbitRadiusX)*Math.cos(orbitRotation)-(Math.sin(i)*orbitRadiusY)*Math.sin(orbitRotation), y: (Math.cos(i)*orbitRadiusX)*Math.sin(orbitRotation)+(Math.sin(i)*orbitRadiusY)*Math.cos(orbitRotation)};// This is just absurd
+}
