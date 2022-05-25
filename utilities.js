@@ -107,3 +107,12 @@ function angleToPoint(x, y, x2, y2){
 function getPointOnOrbit(i, orbitRadiusX, orbitRadiusY, orbitRotation){
 	return {x: (Math.cos(i)*orbitRadiusX)*Math.cos(orbitRotation)-(Math.sin(i)*orbitRadiusY)*Math.sin(orbitRotation), y: (Math.cos(i)*orbitRadiusX)*Math.sin(orbitRotation)+(Math.sin(i)*orbitRadiusY)*Math.cos(orbitRotation)};// This is just absurd
 }
+function screenToSpace(pos){
+    return vec.sub(rotatePoint(vec.sub(pos, {x: width/2, y: height/2}), -camera.rotation), camera.pos);
+}
+function rotatePoint(pos, angle){
+    return {x:pos.x*Math.cos(angle)-pos.y*Math.sin(angle), y: pos.x*Math.sin(angle)+pos.y*Math.cos(angle)};
+}
+function dist(a, b, c, d){
+    return Math.abs(Math.sqrt((Math.max(a, c)-Math.min(a, c))**2+(Math.max(b, d)-Math.min(b, d))**2));
+}
