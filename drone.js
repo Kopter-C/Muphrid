@@ -5,6 +5,8 @@ const separation = 0.010,
     alignSight = 50,
     cohesionSight = Infinity;
 
+const ids = ['white', 'red', 'green', 'blue', 'purple'];
+const drones = [];
 class Drone {
     constructor(id = 'white') {
         this.pos = vec(Math.random()*50+200, Math.random()*50+200);
@@ -164,3 +166,13 @@ class Drone {
         return ids[id];
     }
 }
+
+for (let i = 0; i < 50; i ++) {
+    drones.push(new Drone());
+}
+const pods = [
+    {
+        type: null,
+        target: planet,
+    }
+];
