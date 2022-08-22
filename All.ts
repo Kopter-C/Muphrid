@@ -1,361 +1,399 @@
-const vec = (function () {
-    const func = function (x, y) {
+
+type vec2 = {
+    x: number,
+    y: number
+}
+type body = {
+    pos: vec2
+}
+type building = "mine" | "store" | "launcher" | "refinery";
+type materialAmount = [string, number];
+type orbit = {
+    radius: number,
+    rotationSpeed: number,
+    orbitRadiusX: number,
+    orbitRadiusY: number,
+    orbitRotation: number,
+    orbitStart: number, 
+    orbitSpeed: number, 
+    orbitTarget: body, 
+};
+
+const vec = (function() {
+    const func = function(x: number, y: number): vec2 {
         return {
             x: x,
             y: y,
         };
     };
-    func.add = function (a, b) {
+    func.add = function(a: vec2, b: vec2): vec2 {
         return {
-            x: a.x + b.x,
-            y: a.y + b.y,
+            x: a.x+b.x,
+            y: a.y+b.y,
         };
     };
-    func.sub = function (a, b) {
+    func.sub = function(a: vec2, b: vec2): vec2 {
         return {
-            x: a.x - b.x,
-            y: a.y - b.y,
+            x: a.x-b.x,
+            y: a.y-b.y,
         };
     };
-    func.mult = function (a, mult) {
+    func.mult = function(a: vec2, mult: number): vec2 {
         return {
-            x: a.x * mult,
-            y: a.y * mult,
+            x: a.x*mult,
+            y: a.y*mult,
         };
     };
-    func.div = function (a, mult) {
+    func.div = function(a: vec2, mult: number): vec2 {
         return {
-            x: a.x / mult,
-            y: a.y / mult,
+            x: a.x/mult,
+            y: a.y/mult,
         };
     };
-    func.mag = function (a) {
+    func.mag = function(a: vec2): number {
         return Math.hypot(a.x, a.y);
     };
-    func.dot = function (a, b) {
-        return a.x * b.x + a.y * b.y;
+    func.dot = function(a: vec2, b: vec2) {
+        return a.x*b.x+a.y*b.y;
     };
-    func.norm = function (a) {
-        const len = vec.mag(a);
+    func.norm = function(a: vec2): vec2 {
+        const len: number = vec.mag(a);
         return {
-            x: a.x / len,
-            y: a.y / len,
+            x: a.x/len,
+            y: a.y/len,
         };
     };
-    func.limit = function (a, lim) {
-        let multi;
-        const len = vec.mag(a);
-        multi = len <= lim ? 1 : lim / len;
+    func.limit = function(a: vec2, lim: number): vec2 {
+        let multi: number;
+        const len: number = vec.mag(a);
+        multi = len <= lim ? 1 : lim/len;
+        
         a.x *= multi;
         a.y *= multi;
         return a;
     };
-    func.angleBetween = function (a, b) {
-        return Math.acos(vec.dot(a, b) / (vec.mag(a) * vec.mag(b)));
-    };
-    func.toAngle = function (a) {
+    func.angleBetween = function(a: vec2, b: vec2): number {
+        return Math.acos(vec.dot(a,b)/(vec.mag(a)*vec.mag(b)));
+    }
+    func.toAngle = function(a: vec2): number {
         return Math.atan2(a.y, a.x);
     };
-    func.fromAngle = function (angle) {
+    func.fromAngle = function(angle: number): vec2 {
         return vec(Math.cos(angle), Math.sin(angle));
     };
-    func.copy = function (a) {
+    func.copy = function(a: vec2): vec2 {
         return vec(a.x, a.y);
     };
     return func;
 })();
-const tau = Math.PI * 2;
-const camera = {
-    pos: vec(0, 0),
-    rotation: 0,
-    target: moon,
-    run: function () {
-        this.pos.x += (-this.target.pos.x - this.pos.x) / 10;
-        this.pos.y += (-this.target.pos.y - this.pos.y) / 10;
-        //this.rotation += (-this.target.rotation-this.rotation)/10;
-        this.rotation += 0.001;
-        ctx.setTransform(1, 0, 0, 1, width / 2, height / 2);
-        ctx.rotate(this.rotation);
-        ctx.translate(this.pos.x, this.pos.y);
-    }
-};
-function angleToPoint(x, y, x2, y2) {
-    return -Math.atan2(x - x2, y - y2) - 1.5708;
-}
-function getPointOnOrbit(i, orbitRadiusX, orbitRadiusY, orbitRotation) {
-    return { x: (Math.cos(i) * orbitRadiusX) * Math.cos(orbitRotation) - (Math.sin(i) * orbitRadiusY) * Math.sin(orbitRotation), y: (Math.cos(i) * orbitRadiusX) * Math.sin(orbitRotation) + (Math.sin(i) * orbitRadiusY) * Math.cos(orbitRotation) }; // This is just absurd
-}
-function screenToSpace(pos) {
-    return vec.sub(rotatePoint(vec.sub(pos, vec(width / 2, height / 2)), -camera.rotation), camera.pos);
-}
-function rotatePoint(pos, angle) {
-    return { x: pos.x * Math.cos(angle) - pos.y * Math.sin(angle), y: pos.x * Math.sin(angle) + pos.y * Math.cos(angle) };
-}
-function dist(a, b, c, d) {
-    return Math.abs(Math.sqrt((Math.max(a, c) - Math.min(a, c)) ** 2 + (Math.max(b, d) - Math.min(b, d)) ** 2));
-}
-const mouse = {
-    screen: vec(0, 0),
-    space: vec(0, 0),
-    pressed: false
-};
-gameCanvas.addEventListener("mousemove", (e) => {
-    mouse.screen = { x: e.clientX, y: e.clientY };
-});
 
-const separation = 0.010,
-    cohesion = 0.025,
-    alignment = 0.15,
-    sepSight = 30,
-    alignSight = 50,
-    cohesionSight = Infinity;
-
-const ids = ['white', 'red', 'green', 'blue', 'purple'];
-const drones = [];
-class Drone {
-    constructor(id = 'white') {
-        this.pos = vec(Math.random()*50+200, Math.random()*50+200);
-        this.velocity = vec(0, 0);
-        this.acceleration = vec.norm(vec(Math.random()*2-1, Math.random()*2-1));
-        
-        this.id = id;
-        this.active = true;
-        this.maxVelocity = 1;
-        this.target = null;
-        this.podId = 0;
-    }
-    update() {
-        this.pos = vec.add(this.pos, this.velocity);
-        this.velocity = vec.add(this.velocity, this.acceleration);
-        vec.limit(this.velocity, this.maxVelocity);
-        
-        let sepDir = vec(0, 0);
-        let center = this.pos,
-            close = 0;
-        let angle = vec(0, 0);
-        
-        for (const drone of drones) {
-            const dist = Math.hypot(this.pos.x-drone.pos.x, this.pos.y-drone.pos.y);
-            if (!drone.active || drone === this) continue;
-            
-            const scale = 1-dist/30+0.1;
-            
-            if (dist < sepSight) {
-                sepDir = vec.add(
-                    sepDir,
-                    vec.mult(vec.sub(this.pos, drone.pos), scale)
-                );
-            }
-            
-            if (drone.id !== this.id) continue;
-            
-            if (dist < cohesionSight) {
-                center = vec.add(
-                    center,
-                    drone.pos,
-                );
-            }
-            if (dist < alignSight) angle = vec.add(angle, drone.velocity);
-            close ++;
-        }
-        
-        // Cohesion
-        center = vec.div(center, close);
-        const dirToCenter = vec.sub(center, this.pos);
-        if (center.x && center.y && close) {
-            
-            this.acceleration = vec.norm(
-                vec.add(this.acceleration, vec.mult(vec.norm(dirToCenter), cohesion))
-            );
-        }
-        
-        // Separation
-        if (sepDir.x && sepDir.y) sepDir = vec.mult(sepDir, separation);
-        this.acceleration = vec.norm(
-            vec.add(this.acceleration, sepDir)
-        );
-        
-        // Alignment
-        if (close) {
-            const currentAcc = vec.copy(this.acceleration);
-            this.acceleration = vec.norm(
-                vec.add(this.acceleration, vec.mult(vec.div(angle, close), alignment))
-            );
-        }
-        
-        // Targeting
-        if (pods[this.podId]?.target) {
-            const dirToTarget = vec.sub(
-                vec(pods[this.podId].target.pos.x, pods[this.podId].target.pos.y),
-                this.pos
-            );
-            
-            this.acceleration = vec.norm(vec.add(
-                this.acceleration,
-                vec.mult(vec.norm(dirToTarget), 0.1)
-            ));
-            
-            
-            if (Math.hypot(dirToTarget.x, dirToTarget.y) < pods[this.podId].target.radius) {
-                this.active = false;
-            }
-        }
-        
-        // Obstacles
-        for (const obj of gravityObj) {
-            if (obj === pods[this.podId]?.target) continue;
-            const dist = Math.hypot(obj.pos.x-this.pos.x, obj.pos.y-this.pos.y);
-            if (dist < 80 * obj.radius/30) {
-            
-                const scale = 0.5-(dist-30)/100+0;
-                const dirToObs = vec.sub(this.pos, obj.pos)
-                
-                this.acceleration = vec.norm(vec.add(
-                    this.acceleration,
-                    vec.mult(vec.norm(dirToObs), scale)
-                ));
-            }
-        }
-        
-        
-        
-        
-        // Boundaries
-        if (this.pos.x < 50) {
-            this.acceleration = vec.norm(
-                vec.add(
-                    this.acceleration,
-                    vec(0.5-this.pos.x/100, 0)
-                )
-            );
-        }
-        if (this.pos.x > 650) {
-            this.acceleration = vec.norm(
-                vec.add(
-                    this.acceleration,
-                    vec(-(0.5-(650-this.pos.x)/100), 0)
-                )
-            );
-        }
-        if (this.pos.y < 50) {
-            this.acceleration = vec.norm(
-                vec.add(
-                    this.acceleration,
-                    vec(0, 0.5-this.pos.y/100)
-                )
-            );
-        }
-        if (this.pos.y > 650) {
-            this.acceleration = vec.norm(
-                vec.add(
-                    this.acceleration,
-                    vec(0, -(0.5-(650-this.pos.y)/100))
-                )
-            );
-        }
-    }
-    display() {
-        ctx.fillStyle = ctx.strokeStyle = this.id;
-        ctx.beginPath();
-        ctx.arc(this.pos.x, this.pos.y, 2, 0, tau);
-        ctx.closePath();
-        ctx.fill();
-        ctx.beginPath();
-        ctx.moveTo(this.pos.x, this.pos.y);
-        ctx.lineTo(this.pos.x + this.velocity.x*4, this.pos.y + this.velocity.y*4);
-        ctx.closePath();
-        ctx.stroke();
-    }
+Object.prototype[Symbol.iterator] = function() {
+    // This allows me to use the spread operator with objects which is very useful for vectors
     
-    static createTypeFromId(id) {
-        return ids[id];
-    }
-}
-
-for (let i = 0; i < 50; i ++) {
-    drones.push(new Drone());
-}
-const pods = [
-    {
-        type: null,
-        target: planet,
-    }
-];
+    /*
+    What are iterators?
+    
+    Iterators are what tells the interpreter how to iterate over an object. Iterators are used in 'for...of' loops and with the spread syntax (...)
+    
+    Here's how to use them:
+    https://www.youtube.com/watch?v=2oU-DfdWM0c
+    
+    */
+    
+    const values = Object.values(this); // Gets all of the values in the object
+    let index = -1;
+    
+    return { // This is just the needed syntax to get iterators to work
+        next() {
+            return {
+                value: values[++index], // Increase the index and get the new current value
+                done: index === values.length, // If index is equal to the number of object, it's done
+            };
+        }
+    };
+};
 
 
 class Planet {
-	constructor(radius, startRotation, rotationSpeed, orbitRadiusX, orbitRadiusY, orbitRotation, orbitStart, orbitSpeed, orbitTarget) {
-		this.orbitRadiusX = orbitRadiusX;
-		this.orbitRadiusY = orbitRadiusY;
-		this.orbitRotation = orbitRotation;
-		this.orbitStart = orbitStart;
-		this.orbitSpeed = orbitSpeed;
-		this.radius = radius;
-		this.rotationSpeed = rotationSpeed;//The number of frames that pass before a planet makes one full rotation
-		this.rotation = startRotation;
-		this.pointOnOrbit = orbitStart;
-		this.orbitTarget = orbitTarget;
-		this.pos = getPointOnOrbit(orbitStart, orbitRadiusX, orbitRadiusY, orbitRotation);
-		this.slots = Array(Math.floor(tau*radius));
+    private readonly name: string;
+    private readonly orbit: orbit;
+    private readonly radius: number;
+    private orbitPos: number;
+    private pos: vec2;
+    public slots: string[];
+    public storage: number;
+    public amounts: object;
+    private rotation: number;
+	constructor(name: string, radius: number, orbitData: orbit, atmo: number, type: string, materials: materialAmount[]) {
+		this.name = name;
+        this.orbit = orbitData;
+        this.radius = radius;
+        this.orbitPos = this.orbit.orbitStart;
+		this.pos = getPointOnOrbit(this.orbit, this.orbitPos);
+		this.slots = Array(Math.floor(tau*(radius-atmo)/(slotSize+30))).fill("");
+		this.storage = 20;
+		this.amounts = {};
+		this.rotation = 0;
 	}
-	display() {
-	    let previousTransform = ctx.getTransform();
-	    ctx.translate(this.pos.x, this.pos.y);
-	    ctx.rotate(this.rotation);
-		ctx.fillStyle = "white";
-		ctx.beginPath();
-		ctx.ellipse(0, 0, this.radius, this.radius, 0, 0, 2 * Math.PI);
-		ctx.fill();
-		ctx.fillStyle = "grey";
-		ctx.beginPath();
-		ctx.ellipse(0, 0, this.radius, this.radius, 0, 0, Math.PI);
-		ctx.fill();
-		ctx.setTransform(previousTransform);
-		
-		ctx.strokeStyle = "white";
-		ctx.beginPath();
-		ctx.setLineDash([5, 10]);
-		ctx.ellipse(this.orbitTarget.pos.x, this.orbitTarget.pos.y, this.orbitRadiusX, this.orbitRadiusY, this.orbitRotation, 0, 2 * Math.PI);
-		ctx.stroke();
+	onFocus(){//Run when focus changes
+	    document.getElementById("planet-name").innerHTML = this.name;
+	    document.getElementById("planet-type").innerHTML = `Type: ${this.type}`;
 	}
-	run() {
-	    this.pointOnOrbit += this.orbitSpeed;
-	    this.rotation += (2*Math.PI)/this.rotationSpeed;
-	    
-	    
-	    this.pos = vec.add(getPointOnOrbit(this.pointOnOrbit, this.orbitRadiusX, this.orbitRadiusY, this.orbitRotation), this.orbitTarget.pos?this.orbitTarget.pos:this.orbitTarget);
-	    
-	    if(dist(mouse.space.x, mouse.space.y, this.pos.x, this.pos.y)<this.radius){
-	        camera.target = this;
+	canBuy(thing: building) {
+        let canBuy = false;
+        for(let i in buildingMaterials[thing]){
+            if(!this.amounts[i]) return false;
+            if(this.amounts[i] < buildingMaterials[thing][i])return false;
+	    }//Loop over all the requrements, and if one is missing, return false.
+	    return true;
+	}
+	addThing(thing){
+	    if(!this.canBuy(thing)) return;
+	    let empty = [];
+	    for(let i in buildingMaterials[thing]){
+            this.amounts[i] -= buildingMaterials[thing][i];
+	    }//Use materials
+	    for(let i = 0 ; i < this.slots.length ; i ++){
+	        if(this.slots[i] === ""){
+	            empty.push(i);
+	        }
+	    }//Find all empty slots
+	    this.slots[Math.floor(empty[Math.floor(Math.random()*empty.length)])] = thing;//Build in random empty slot
+	}
+	removeThing(thing){
+	    let things = [];
+	    for(let i in this.slots){
+	        if(this.slots[i] === thing){
+	            things.push(i);
+	        }
+	    }//Find all of thing
+	    if(things.length){
+	        this.slots[Math.floor(things[Math.floor(Math.random()*things.length)])] = "";//Remove a random one
 	    }
 	}
+	display() {
+		ctx.strokeStyle = "rgb(201, 193, 193)";
+		ctx.lineWidth = 2 + (1-camera.scale)*8;
+		ctx.beginPath();
+		ctx.setLineDash([10, 5]);
+		ctx.ellipse(this.orbitTarget.pos.x, this.orbitTarget.pos.y, this.orbitRadiusX, this.orbitRadiusY, this.orbitRotation, 0, 2 * Math.PI);
+		ctx.stroke();
+	    let previousTransform = ctx.getTransform();//Used in place of pushMatrix
+	    ctx.translate(this.pos.x, this.pos.y);
+	    ctx.rotate(this.rotation);
+	    if (this.img) {
+	        ctx.drawImage(this.img, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+	    } else {
+            ctx.fillStyle = "grey";
+            ctx.beginPath();
+            ctx.ellipse(0, 0, this.radius, this.radius, 0, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.fillStyle = "white";
+            ctx.beginPath();
+            ctx.ellipse(0, 0, this.radius-this.atmo, this.radius-this.atmo, 0, 0, 2 * Math.PI);
+            ctx.fill();
+	    }
+		
+		ctx.setLineDash([]);
+		ctx.lineWidth = this.radius / 25;
+        ctx.shadowBlur = '10';
+		for(let i in this.slots){
+		    ctx.rotate(tau/this.slots.length);
+		    if(this.slots[i] === "mine"){
+		        ctx.shadowColor = ctx.strokeStyle = ctx.fillStyle = 'rgb(214, 81, 81)';
+		        ctx.beginPath();
+		        ctx.moveTo(0.24 * this.radius, -0.02 * this.radius);
+		        ctx.lineTo(0.6 * this.radius, -0.1 * this.radius);
+		        ctx.lineTo(0.5 * this.radius, 0.1 * this.radius);
+		        ctx.lineTo(0.25 * this.radius, 0.02 * this.radius);
+		        ctx.lineTo(0.25 * this.radius, -0.02 * this.radius);
+		        ctx.stroke();
+		        ctx.fill();
+		        ctx.closePath();
+		    }
+		    else if(this.slots[i] === "store"){
+    		    ctx.shadowColor = ctx.strokeStyle = ctx.fillStyle = 'rgb(108, 201, 217)';
+		        ctx.beginPath();
+		        ctx.arc(0.24 * this.radius, 0, 0.04 * this.radius, 0, tau);
+		        ctx.arc(0.5 * this.radius, 0, 0.06 * this.radius, 0, tau);
+		        ctx.stroke();
+		        ctx.fill();
+		        ctx.closePath();
+		    }
+		    else if(this.slots[i] === "refinery"){
+		        ctx.shadowColor = ctx.strokeStyle = ctx.fillStyle = 'rgb(242, 190, 87)';
+		        ctx.beginPath();
+		        ctx.moveTo(0.24 * this.radius, 0 * this.radius);
+		        ctx.lineTo(0.3 * this.radius, -0.05 * this.radius);
+		        ctx.lineTo(0.44 * this.radius, -0.05 * this.radius);
+		        ctx.lineTo(0.5 * this.radius, 0 * this.radius);
+		        ctx.lineTo(0.44 * this.radius, 0.05 * this.radius);
+		        ctx.lineTo(0.3 * this.radius, 0.05 * this.radius);
+		        ctx.lineTo(0.24 * this.radius, 0 * this.radius);
+		        ctx.stroke();
+		        ctx.fill();
+		        ctx.closePath();
+		    }
+		    else if(this.slots[i] === "launcher"){
+		        ctx.shadowColor = ctx.strokeStyle = 'rgb(96, 168, 117)';
+		        ctx.beginPath();
+		        ctx.moveTo(0.24 * this.radius, 0 * this.radius);
+		        ctx.lineTo(0.5 * this.radius, 0 * this.radius);
+		        ctx.lineTo(0.5 * this.radius, -0.1 * this.radius);
+		        ctx.lineTo(0.5 * this.radius, 0.1 * this.radius);
+		      //  ctx.lineTo(0.44 * this.radius, 0.05 * this.radius);
+		      //  ctx.lineTo(0.3 * this.radius, 0.05 * this.radius);
+		      //  ctx.lineTo(0.24 * this.radius, 0 * this.radius);
+		        ctx.stroke();
+		        ctx.closePath();
+		    }
+		    else{
+		        ctx.fillStyle = 'transparent';
+		    }
+	        ctx.shadowColor = 'transparent';
+		    
+		    
+		}
+		ctx.setTransform(previousTransform);// popMatrix()
+	    ctx.setTransform(1, 0, 0, 1, 0, 0);// resetMatrix() (previousTransform still exists)
+	    
+	    let pos = {x: this.pos.x, y: this.pos.y}; //copy
+	    pos = vec.add(vec.mult(rotatePoint(vec.add(pos, camera.pos), camera.rotation), camera.scale), {x: width/2, y: height/2});
+	    if(pos.x < 0 || pos.x > width || pos.y < 0 || pos.y > height-50){
+	        
+    	    ctx.font = "30px Google Sans";
+    	    pos.x = Math.max(Math.min(pos.x, width-ctx.measureText(this.name).width - 12), 5);
+    	    pos.y = Math.max(Math.min(pos.y, height-100), 30);
+	        if(dist(mouse.screen, pos) < this.radius/5){
+	             camera.target = this;
+	        }
+    	    ctx.fillStyle = 'rgb(173, 173, 173, 0.5)';
+    	    ctx.fillRect(pos.x, pos.y - 30, ctx.measureText(this.name).width + 6, 35);
+    	    ctx.fillStyle = 'rgb(214, 81, 81)';
+    		ctx.fillText(this.name, pos.x + 3, pos.y - 3);
+	    }
+	    
+		ctx.setTransform(previousTransform);// popMatrix()
+	}
+	updateUI () {
+	    if(keys['b']){
+    	    if(keys['m']){
+    	        this.addThing('mine');
+    	        keys['m'] = false;
+    	    }
+    	    if(keys['s']){
+    	        this.addThing('store');
+    	        keys['s'] = false;
+    	    }
+    	    if(keys['l']){
+    	        this.addThing('launcher');
+    	        keys['l'] = false;
+    	    }
+    	    if(keys['r']){
+    	        this.addThing('refinery');
+    	        keys['r'] = false;
+    	    }
+	    }
+	    let data = `<h6 style = "font-size: 20px;">Materials:</h6>`;
+        for(let i in this.amounts){
+            if(this.materials.filter(mat => mat[0] === i).length){
+                var pm = this.materials.filter(mat => mat[0] === i)[0][1];
+                var gm = miningRates[i];
+            }// Get amount per second.. but it's not quite per second
+            data += `<h6 style = "font-size: 15px">${i}: ${Math.round(this.amounts[i])} ${this.materials.filter(mat => mat[0] === i).length?`(${Math.floor((pm*gm)*1000)/100*this.slots.filter(s => s === "mine").length})`:''}</h6>`;
+        }
+        data += `<h6 style = "font-size: 15px;">Storage: ${Math.round(this.storage)}</h6>`;
+        document.getElementById("extra-data-div").innerHTML = data;
+    }
+    run() {
+        this.pos = vec.add(getPointOnOrbit(this), this.orbitTarget.pos?this.orbitTarget.pos:this.orbitTarget);
+        
+        this.pointOnOrbit += this.orbitSpeed;
+        
+        const dirToStar = vec.sub(this.pos, star.pos);
+        this.rotation = Math.atan2(dirToStar.y, dirToStar.x);
+        
+        if (this.canPower) this.runStructures?.();
+        
+        if(dist(mouse.space, this.pos)<this.radius){
+	        camera.target = this;
+	        this.onFocus();
+	    }
+	}
+	runStructures() {
+        this.storage = 50;
+        for(let building of this.slots){
+            if(building === "store"){
+                this.storage += 100;
+            }
+        }
+        for(let amount in this.amounts){
+            this.storage -= this.amounts[amount];
+        }
+        
+        if(keys['l']){
+            let launcher = -1;
+            for(let i in this.slots){
+                if(this.slots[i] === "launcher"){
+                    if(launcher == -1){
+                        launcher = i;
+                    }
+                    if(dist(vec.add(this.pos, {x:Math.cos(this.rotation+(Number(launcher)+3.55)*(tau/this.slots.length))*100, y:this.pos.y+Math.sin(this.rotation+(Number(launcher)+3.55)*(tau/this.slots.length))*100}), mouse.space) > dist(vec.add(this.pos, {x:Math.cos(this.rotation+(Number(i)+3.55)*(tau/this.slots.length))*100, y:this.pos.y+Math.sin(this.rotation+(Number(i)+3.55)*(tau/this.slots.length))*100}), mouse.space)){
+                        launcher = i;
+                    }
+                }
+            }//Find closest launcher to mouse
+            if(launcher != -1){
+                let ang = angleToPoint(this.pos, mouse.space);
+                let tt = {pos: vec.add(this.pos, {
+x: Math.cos(this.rotation+(Number(launcher)+3.55)*(tau/this.slots.length))*100,
+y: Math.sin(this.rotation+(Number(launcher)+3.55)*(tau/this.slots.length))*100
+                }), dr: {x: Math.cos(ang)*8, y: Math.sin(ang)*8}};
+                
+                
+                tracerLoop:// later we can use this to break out of this loop
+                for(let i = 0 ; i < 100 ; i ++){
+                    ctx.fillStyle = 'white';
+                    ctx.fillRect(tt.pos.x, tt.pos.y, 10, 10);
+                    tt.dr = vec.add(tt.dr, getGravityAtPoint(tt.pos, getPlanetsAtTime(frame+i)));
+                    tt.pos = vec.add(tt.pos, tt.dr);
+                    
+                    for(let planet of planets){
+                        if(dist(planet.pos, tt.pos)<planet.radius){
+                            break tracerLoop;// this seems to be the only way to break out of a nested loop
+                        }
+                    }
+                }
+            }
+        }
+        for(let i in this.slots){
+            let t = this.materials[Math.floor(Math.random()*this.materials.length)][0];
+            if(this.slots[i] === 'mine'){
+                if(this.amounts[t] === undefined) this.amounts[t] = 0;
+                if(this.storage > 0) this.amounts[t] += miningRates[t];
+            }
+            if(this.slots[i] === 'refinery'){
+                let tries = 50;
+                let thingToRefine;
+                do{
+                    thingToRefine = Object.keys(this.amounts)[Math.floor(Math.random()*Object.keys(this.amounts).length)];
+                    tries --;
+                }//find a random thing on the planet that can be refined
+                while(tries > 0 &&( !rawToFinished[thingToRefine] || this.amounts[t] <= 0));
+                if(tries > 0){
+                    this.amounts[thingToRefine] -= conversionRates[rawToFinished[thingToRefine]];
+                    if(!this.amounts[rawToFinished[thingToRefine]]){
+                        this.amounts[rawToFinished[thingToRefine]] = 0;
+                    }
+                    this.amounts[rawToFinished[thingToRefine]] += conversionRates[rawToFinished[thingToRefine]];//Increase the finished version of t based on the conversion rates
+                }//refine it
+            }
+        }
+	}
+	getMaterial(wanted) {
+        for (let i = this.materials.length; i --;) {
+            if (this.materials[i][0] === wanted) return i;
+        }
+        return -1;
+	}
 }
-
-const width = 1000;
-const height = 800;
-const tau = 2*Math.PI;
-const slotSize = 30;
-let frame = 0;       
-const gameCanvas = document.getElementById("gameCanvas");        
-
-const ctx = gameCanvas.getContext("2d");
-
-const star = {
-    pos: vec(0, 0),
-    radius: 30,
-};
-const planet = new Planet(100, 0, 2000, 200, 250, 45, 0, 0.0001, star);
-const moon = new Planet(30, 0, 500, 180, 210, 20, 0, 0.003, planet);
-function loop(){
-    mouse.space = screenToSpace(mouse.screen);
-    ctx.fillStyle = "black";
-    ctx.fillRect(-width, -height, width*2, height*2)
-    camera.run();
-    planet.run();
-    planet.display();
-    moon.run();
-    moon.display();
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    frame ++;
-}
-setInterval(loop, 1000/60);

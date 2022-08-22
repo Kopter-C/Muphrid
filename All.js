@@ -1,3 +1,10 @@
+
+const width = 1000;
+const height = 800;
+const tau = 2*Math.PI;
+const slotSize = 30;
+let frame = 0;       
+const tau = Math.PI * 2;
 const vec = (function () {
     const func = function (x, y) {
         return {
@@ -64,7 +71,6 @@ const vec = (function () {
     };
     return func;
 })();
-const tau = Math.PI * 2;
 const camera = {
     pos: vec(0, 0),
     rotation: 0,
@@ -331,11 +337,6 @@ class Planet {
 	}
 }
 
-const width = 1000;
-const height = 800;
-const tau = 2*Math.PI;
-const slotSize = 30;
-let frame = 0;       
 const gameCanvas = document.getElementById("gameCanvas");        
 
 const ctx = gameCanvas.getContext("2d");
